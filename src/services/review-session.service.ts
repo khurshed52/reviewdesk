@@ -14,7 +14,9 @@ import { AppError } from "@/lib/errors";
 import { rateLimit, requestAddress } from "@/lib/rate-limit";
 
 function signed(value: string) {
-  if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET is required");
+  if (!process.env.AUTH_SECRET) {
+    throw new Error("AUTH_SECRET is required");
+  }
 
   return createHmac("sha256", process.env.AUTH_SECRET)
     .update(value)
@@ -61,6 +63,70 @@ export async function getVisitorKey(create: boolean) {
   return signed(`visitor:${key}`);
 }
 
+/**
+ * Used by the public QR page to decide what the same visitor
+ * should see when reopening the same QR URL.
+ */
+export async function getExistingReviewState(slug: string) {
+  const visitorKey = await getVisitorKey(false).catch(() => null);
+
+  if (!visitorKey) {
+    return {
+      state: "NEW" as const,
+      googleReviewUrl: null,
+    };
+  }
+
+  const session = await prisma.reviewSession.findFirst({
+    where: {
+      visitorKey,
+      qrCode: {
+        slug,
+      },
+    },
+    select: {
+      status: true,
+      clickedGoogle: true,
+      confirmedPostedAt: true,
+      qrCode: {
+        select: {
+          location: {
+            select: {
+              googleReviewUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!session) {
+    return {
+      state: "NEW" as const,
+      googleReviewUrl: null,
+    };
+  }
+
+  if (session.confirmedPostedAt) {
+    return {
+      state: "COMPLETED" as const,
+      googleReviewUrl: session.qrCode.location.googleReviewUrl,
+    };
+  }
+
+  if (session.status === "GOOGLE_CLICKED" || session.clickedGoogle) {
+    return {
+      state: "GOOGLE_CLICKED" as const,
+      googleReviewUrl: session.qrCode.location.googleReviewUrl,
+    };
+  }
+
+  return {
+    state: "IN_PROGRESS" as const,
+    googleReviewUrl: null,
+  };
+}
+
 export async function saveRating(input: unknown) {
   const { slug, rating } = reviewSchema.parse(input);
 
@@ -79,6 +145,30 @@ export async function saveRating(input: unknown) {
 
     if (!qr?.isActive) {
       throw new AppError("This review link is unavailable");
+    }
+
+    const existing = await tx.reviewSession.findUnique({
+      where: {
+        qrCodeId_visitorKey: {
+          qrCodeId: qr.id,
+          visitorKey,
+        },
+      },
+      select: {
+        status: true,
+        confirmedPostedAt: true,
+        clickedGoogle: true,
+      },
+    });
+
+    if (
+      existing?.confirmedPostedAt ||
+      existing?.status === "GOOGLE_CLICKED" ||
+      existing?.clickedGoogle
+    ) {
+      throw new AppError(
+        "You have already completed this review experience.",
+      );
     }
 
     await tx.reviewSession.upsert({
@@ -243,7 +333,9 @@ export async function saveReviewForGoogle(input: unknown) {
     );
 
     if (!url.success) {
-      throw new AppError("This location's Google review link is unavailable.");
+      throw new AppError(
+        "This location's Google review link is unavailable.",
+      );
     }
 
     const result = await tx.reviewSession.updateMany({
@@ -284,26 +376,40 @@ export async function saveReviewForGoogle(input: unknown) {
 export async function confirmReviewPosted(input: unknown) {
   const { slug } = confirmReviewPostedSchema.parse(input);
   const visitorKey = await getVisitorKey(false);
+
   const where = {
     visitorKey,
     qrCode: { slug },
     clickedGoogle: true,
     status: "GOOGLE_CLICKED" as const,
   };
+
   return prisma.$transaction(async (tx) => {
-    // Conditional update preserves the original timestamp, including concurrent retries.
     await tx.reviewSession.updateMany({
-      where: { ...where, confirmedPostedAt: null },
-      data: { confirmedPostedAt: new Date() },
+      where: {
+        ...where,
+        confirmedPostedAt: null,
+      },
+      data: {
+        confirmedPostedAt: new Date(),
+      },
     });
+
     const session = await tx.reviewSession.findFirst({
       where,
-      select: { confirmedPostedAt: true },
+      select: {
+        confirmedPostedAt: true,
+      },
     });
-    if (!session?.confirmedPostedAt)
+
+    if (!session?.confirmedPostedAt) {
       throw new AppError(
         "Please open Google from your review before confirming.",
       );
-    return { confirmedPostedAt: session.confirmedPostedAt };
+    }
+
+    return {
+      confirmedPostedAt: session.confirmedPostedAt,
+    };
   });
 }
