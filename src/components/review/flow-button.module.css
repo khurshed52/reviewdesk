@@ -1,0 +1,26 @@
+.primary:global(.ant-btn) {
+  height: auto;
+  min-height: 62px;
+  padding: 16px 18px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.primary:global(.ant-btn):not(:disabled) {
+  background: #176b5b;
+  border-color: #3b8e7f;
+  box-shadow: 0 8px 24px #0003;
+  color: #fff;
+}
+
+.primary:global(.ant-btn):not(:disabled):hover {
+  background: #1c7b69;
+  border-color: #4a9f90;
+}
+
+.primary:global(.ant-btn):focus-visible {
+  outline: 3px solid #81baad;
+  outline-offset: 3px;
+}

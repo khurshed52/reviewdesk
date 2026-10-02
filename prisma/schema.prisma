@@ -1,0 +1,191 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  MERCHANT
+}
+
+enum QRSource {
+  COUNTER
+  TABLE
+  RECEIPT
+  WHATSAPP
+  MENU
+  ENTRANCE
+  OTHER
+}
+
+enum ReviewSessionStatus {
+  STARTED
+  RATED
+  TAGS_SELECTED
+  REVIEW_GENERATED
+  GOOGLE_CLICKED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String?
+  role         UserRole @default(MERCHANT)
+
+  merchant Merchant?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Merchant {
+  id   String @id @default(cuid())
+  name String
+
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  businesses Business[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Business {
+  id      String  @id @default(cuid())
+  name    String
+  logoUrl String?
+
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  locations Location[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([merchantId])
+  @@index([categoryId])
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  slug      String  @unique
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  businesses Business[]
+  tags       ReviewTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewTag {
+  id        String  @id @default(cuid())
+  name      String
+  slug      String
+  icon       String?
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+}
+
+model Location {
+  id              String  @id @default(cuid())
+  name            String
+  address         String?
+  googleReviewUrl String
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  qrCodes QRCode[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model QRCode {
+  id       String   @id @default(cuid())
+  slug     String   @unique
+  name     String?
+  source   QRSource @default(OTHER)
+  isActive Boolean  @default(true)
+
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  scans    QRScan[]
+  sessions ReviewSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([locationId])
+}
+
+model QRScan {
+  id String @id @default(cuid())
+
+  qrCodeId String
+  qrCode   QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([qrCodeId, createdAt])
+}
+
+model ReviewSession {
+  id         String @id @default(cuid())
+  visitorKey String
+
+  status ReviewSessionStatus @default(STARTED)
+
+  rating       Int?
+  selectedTags String[] @default([])
+
+  generatedReviews String[] @default([])
+  reviewText       String?
+
+  clickedGoogle Boolean @default(false)
+  confirmedPostedAt DateTime?
+
+  qrCodeId String
+  qrCode   QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([qrCodeId, visitorKey])
+  @@index([qrCodeId, createdAt])
+  @@index([qrCodeId, status])
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

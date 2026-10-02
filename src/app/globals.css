@@ -1,0 +1,127 @@
+@layer theme, base, antd, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  color: #142a29;
+  background: #f3f6f6;
+  font-family: Arial, Helvetica, sans-serif;
+}
+a {
+  color: inherit;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: #c9f07b;
+  color: #102e2a;
+  border-radius: 10px;
+  font-size: 23px;
+}
+.auth-shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #eaf1ef;
+}
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+}
+.page-title {
+  margin: 0 0 8px;
+  font-size: 30px;
+  letter-spacing: -1px;
+  line-height: 1.25;
+}
+.page-description {
+  color: #647573;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.dashboard-content {
+  padding: 30px 36px 48px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+}
+.sidebar-brand {
+  padding: 28px 24px 36px;
+  color: white;
+}
+.sidebar-label {
+  color: #8da8a1;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  padding: 0 26px 12px;
+}
+.desktop-sidebar {
+  min-height: 100dvh;
+}
+.mobile-menu {
+  display: none !important;
+}
+.stat-icon {
+  color: #176b5b;
+  background: #edf4ef;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 20px;
+  display: inline-flex;
+}
+.stat-label {
+  color: #647573;
+  margin-bottom: 14px;
+}
+.stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+.public-shell {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: #eaf1ef;
+}
+.public-card {
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+@media (max-width: 767px) {
+  .desktop-sidebar,
+  .desktop-toggle {
+    display: none !important;
+  }
+  .mobile-menu {
+    display: inline-flex !important;
+  }
+  .dashboard-content {
+    padding: 24px 16px;
+  }
+  .page-title {
+    font-size: 26px;
+  }
+  .header-company {
+    display: none;
+  }
+}
