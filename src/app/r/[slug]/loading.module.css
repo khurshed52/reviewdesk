@@ -1,0 +1,241 @@
+.screen {
+  background: radial-gradient(ellipse at 50% 40%, #f3fbf7 0%, #f9fcfa 70%);
+  color: #092f32;
+  isolation: isolate;
+}
+
+.decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.topCurve,
+.bottomCurve {
+  position: absolute;
+  width: clamp(230px, 42vw, 430px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #dcece4;
+  opacity: 0.55;
+}
+.topCurve {
+  top: -160px;
+  left: -145px;
+  box-shadow: 58px 3px 0 0 #e8f3ed;
+}
+.bottomCurve {
+  right: -155px;
+  bottom: -170px;
+  box-shadow: -65px -2px 0 0 #e8f3ed;
+}
+.topCurve::after,
+.bottomCurve::after {
+  content: "";
+  position: absolute;
+  inset: -35px;
+  border: 1px solid #c9e5d8;
+  border-radius: 50%;
+}
+.leaf {
+  position: absolute;
+  width: 22px;
+  height: 36px;
+  border-radius: 0 100% 0 100%;
+  background: linear-gradient(135deg, #a9d3b8, #78b797);
+  opacity: 0.7;
+}
+.leaf::after {
+  content: "";
+  position: absolute;
+  width: 1px;
+  height: 85%;
+  background: #6eaf8c;
+  left: 50%;
+  top: 16%;
+  transform: rotate(-30deg);
+}
+.leafOne {
+  top: 9%;
+  right: 13%;
+  transform: rotate(-12deg);
+}
+.leafTwo {
+  top: 25%;
+  left: 7%;
+  transform: rotate(50deg);
+}
+.leafThree {
+  top: 46%;
+  right: 11%;
+  transform: rotate(70deg) scale(0.8);
+  opacity: 0.4;
+}
+.leafFour {
+  bottom: 30%;
+  left: 10%;
+  transform: rotate(-10deg) scale(0.9);
+}
+.speck {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b4dac6;
+}
+.speckOne {
+  top: 16%;
+  right: 8%;
+}
+.speckTwo {
+  top: 36%;
+  left: 7%;
+}
+.speckThree {
+  bottom: 32%;
+  right: 6%;
+}
+.speckFour {
+  bottom: 12%;
+  left: 10%;
+}
+
+.loader {
+  position: relative;
+  width: 210px;
+  height: 210px;
+  margin: 0 auto 5px;
+  display: grid;
+  place-items: center;
+}
+.rings {
+  position: absolute;
+  inset: 19px;
+  border-radius: 50%;
+  background: #dff3eb;
+  box-shadow:
+    0 0 0 17px #eaf6f0,
+    0 0 0 34px #f2f9f5,
+    0 0 0 36px #eff7f2;
+  animation: review-loader-glow 4s ease-in-out infinite;
+}
+.center {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  color: white;
+  background: linear-gradient(145deg, #55af98 0%, #197c69 58%, #126451 100%);
+  box-shadow:
+    0 10px 18px #5ac6a633,
+    inset 0 0 0 1px #ffffff35;
+}
+.arc {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #137e68;
+  animation: review-loader-spin 5s linear infinite;
+}
+.heading {
+  margin: 18px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(26px, 7.1vw, 31px);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+}
+.subtitle {
+  margin: 12px 0 0;
+  color: #7d9393;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.dots {
+  margin-top: 30px;
+  height: 14px;
+}
+.dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #79cfb8;
+  animation: review-loader-dot 1.8s ease-in-out infinite;
+}
+.dots span:nth-child(2) {
+  width: 11px;
+  height: 11px;
+  background: #12816b;
+  animation-delay: 0.2s;
+}
+.dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.features {
+  margin-top: 46px;
+}
+.feature {
+  position: relative;
+  padding: 0 5px;
+}
+.feature + .feature::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 0;
+  height: 19px;
+  width: 1px;
+  background: #dbece4;
+}
+.featureIcon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin: auto;
+  background: #edf6f1;
+  border-radius: 50%;
+  color: #147966;
+}
+.feature p {
+  max-width: 115px;
+  margin: 8px auto 0;
+  color: #768e90;
+  font-size: 12px;
+  line-height: 1.4;
+}
+@keyframes review-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes review-loader-glow {
+  50% {
+    opacity: 0.65;
+    transform: scale(0.97);
+  }
+}
+@keyframes review-loader-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.85);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arc,
+  .rings,
+  .dots span {
+    animation: none;
+  }
+}
