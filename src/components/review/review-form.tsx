@@ -133,9 +133,7 @@ const experiences = [
 
 
 function ExperienceFace({ rating, color }: { rating: number; color: string }) {
-
   return (
-
     <svg
 
       aria-hidden="true"
