@@ -92,7 +92,7 @@ test("final review validates ownership, URL and text, and saves all fields toget
     saveReviewForGoogle({ ...input, reviewText: "  " }),
   );
   await assert.rejects(() =>
-    saveReviewForGoogle({ ...input, reviewText: "x".repeat(4001) }),
+    saveReviewForGoogle({ ...input, reviewText: "x".repeat(501) }),
   );
   cookie = undefined;
   await assert.rejects(() => saveReviewForGoogle(input));

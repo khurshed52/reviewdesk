@@ -1,17 +1,4 @@
 import { z } from "zod";
-export const categories = [
-  "Cafe",
-  "Restaurant",
-  "Salon",
-  "Clinic",
-  "Gym",
-  "Hotel",
-  "Retail",
-  "Car Wash",
-  "Real Estate",
-  "Repair Service",
-  "Other",
-] as const;
 export const sources = [
   "COUNTER",
   "TABLE",
@@ -78,7 +65,7 @@ export const googleReviewUrlSchema = httpsUrl.refine((v) => {
 }, "Enter a Google Maps or Google Review URL");
 export const businessCreateSchema = z.object({
   name,
-  category: z.enum(categories),
+  category: z.string().trim().min(1).max(120),
   logoUrl: z
     .union([httpsUrl, z.literal("")])
     .optional()
@@ -117,7 +104,6 @@ export const reviewTagsSchema = z.object({
   slug: slugSchema,
   selectedTags: z
     .array(z.string().cuid())
-    .min(1)
     .max(3)
     .refine((ids) => new Set(ids).size === ids.length, "Select distinct tags"),
 });
@@ -128,7 +114,7 @@ export const finalReviewSchema = z.object({
     .string()
     .trim()
     .min(1, "Please enter your review.")
-    .max(4000, "Keep your review under 4,000 characters."),
+    .max(500, "Keep your review under 500 characters."),
 });
 
 export const confirmReviewPostedSchema = z.object({ slug: slugSchema });

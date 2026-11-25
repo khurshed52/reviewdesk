@@ -36,12 +36,8 @@ export async function generateReviewSuggestions(input: unknown) {
   if (!regenerate && cached.success) return cached.data;
   const business = session.qrCode.location.business;
   const tagIds = [...new Set(session.selectedTags)];
-  if (
-    tagIds.length < 1 ||
-    tagIds.length > 3 ||
-    tagIds.length !== session.selectedTags.length
-  )
-    throw new AppError("Please select one to three tags first.");
+  if (tagIds.length > 3 || tagIds.length !== session.selectedTags.length)
+    throw new AppError("Select up to three distinct tags.");
   const tags = await prisma.reviewTag.findMany({
     where: {
       id: { in: tagIds },

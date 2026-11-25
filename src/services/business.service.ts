@@ -66,3 +66,12 @@ async function resolveCategory(name: string) {
   if (!category) throw new AppError("This category is unavailable");
   return category.id;
 }
+
+export async function listActiveBusinessCategories() {
+  await requireMerchantUser();
+  return prisma.category.findMany({
+    where: { isActive: true },
+    select: { name: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+}

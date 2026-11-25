@@ -156,9 +156,9 @@ Merchant IDs are always derived from the signed-in account. ADMIN users can insp
 - The `qrcode` package renders a 1024px PNG containing `${AUTH_URL}/r/${slug}`. Merchants can preview, download, copy, deactivate and reactivate codes.
 - Public resolution loads the QR, its location, business and merchant. Inactive links show an unavailable Result; invalid links show a 404 Result.
 - Opening or refreshing a valid, active `/r/[slug]` page records a `QRScan`. Invalid and inactive links do not record scans. Repeated openings count separately, not as unique visitors.
-- Selecting 1–5 stars creates or updates the anonymous session. Simply loading or refreshing the page does not create a session.
+- Create My Review saves the selected experience (internally 1–5) and optional tags to the anonymous session before generation. Simply loading or refreshing the page does not create a session.
 - An HMAC-signed, HttpOnly, SameSite=Lax visitor cookie expires after 24 hours. Only its keyed hash is stored in the database. Repeated interactions with the same QR and cookie update one session. Clearing cookies or using another browser creates a new session; this is not a unique-person metric.
-- The current customer flow stops at selecting a generated review. Google redirection is not enabled; historical Google-click analytics remain available.
+- The customer selects or edits one suggestion, copies it, and opens Google to post manually. Existing handoff and user-confirmed completion analytics remain separate.
 - No customer email, phone number or name is requested. `selectedTags` stores up to three active category tag IDs; `generatedReviews` stores validated suggestions and `reviewText` stores the chosen suggestion.
 
 ## Dashboard and UI
@@ -222,17 +222,33 @@ Tables currently paginate the loaded tenant dataset in the browser. Large tenant
 
 ## Intentionally postponed
 
-Google review redirection, review editing, translation, Stripe, subscriptions, billing, WhatsApp API, Google Business Profile API and automated password-recovery email delivery. Settings displays account/workspace details; it does not introduce unrequested account-edit or billing features.
+Translation, Stripe, subscriptions, billing, WhatsApp API, Google Business Profile API and automated password-recovery email delivery. Settings displays account/workspace details; it does not introduce unrequested account-edit or billing features.
 
 
-## Groq review suggestions
+## Public review flow: QR and NFC
 
-Set server-only `GROQ_API_KEY` and restart the app after changing `.env`. The official `groq-sdk` SDK uses `openai/gpt-oss-20b`; no public API key or client SDK is used. The existing `add_generated_reviews` migration must be applied before running this flow.
+Both QR and NFC open the same HTTPS destination: /r/{slug}. The route loader and non-blocking after() scan recording remain in place. There are three customer screens:
+1. Experience and optional highlights: choose an experience, optionally select up to three active category tags, then Create My Review.
+2. AI review: view one suggestion, cycle cached suggestions with Try Another, regenerate after the cache is exhausted, or Edit inline (500 characters maximum).
+3. Google handoff: Use This Review saves the original selection and final edited text, marks GOOGLE_CLICKED using the existing service, and attempts clipboard copying. Open Google Review opens the configured Google URL in a new tab with same-tab fallback if blocked. Nothing is posted automatically.
 
-After choosing a rating and up to three tags, the customer clicks Generate review suggestions. Successful generation replaces the rating step with selectable suggestions; failures leave the rating saved and offer Retry. The server verifies the signed visitor cookie and active QR, loads the existing rated session and sends only the rating, selected active tag names from the business category, business name, category and location name to Groq. The rating and selected tags are saved before generation; Category and ReviewTag tables remain available. A 30-second timeout, visitor/IP rate limits, and validation enforce 3–4 distinct, short plain strings. The prompt maps all five ratings to their corresponding sentiment and prohibits invented specifics.
+A hidden-then-visible transition opens the return confirmation. Yes, done saves confirmedPostedAt (user-confirmed, not Google-verified). Reopening a handed-off session shows recovery; confirmed sessions show Thank you, without restarting the journey.
 
-Successful results are saved as `generatedReviews` with status `REVIEW_GENERATED`. Repeating a request reuses valid saved suggestions; only Regenerate replaces them. Failed regeneration keeps the previous results. Changing the rating invalidates suggestions for the old input; re-saving an unchanged rating preserves them. Concurrent changes prevent a stale generation response from overwriting the session. Choosing a supplied suggestion saves its exact text in `reviewText`; arbitrary text is rejected. No Google redirect, editing or translation is included.
+### Groq
 
+Set server-only GROQ_API_KEY. The existing Groq SDK/model, response schema, rate limits and 503/429 retries are unchanged. Zero to three tags are accepted. With no tags the prompt permits general subjective experience only, without inventing products or specific qualities. All five experience levels keep their corresponding sentiment and can continue to Google. Failed regeneration preserves saved suggestions.
 
-Groq retries 503/429 at most three total attempts, waiting 1s then 2s. SDK automatic retries are disabled; permanent errors are not retried. The model is configured in GROQ_MODEL in src/lib/groq.ts. JSON mode provides an object envelope; the helper extracts and validates 3–4 plain review strings before saving anything. Failed generation leaves existing suggestions untouched. The public rating → tags → Generate → suggestions flow keeps its compact neutral transient message and Try again button, preserving the chosen rating and tags. Permanent failures retain normal error handling.
-# reviewdesk
+### Programming NFC cards
+
+Write an NDEF URI record containing the exact public HTTPS review URL, for example:
+https://reviewdesk-olive.vercel.app/r/{slug}
+
+Optional entry hints are also accepted:
+- QR: /r/{slug}?entry=qr
+- NFC: /r/{slug}?entry=nfc
+
+These hints do not change the flow and are not persisted or reported separately. Existing QRScan counts every valid public opening, including NFC, and the funnel calculations are unchanged. QRCode.source describes placement, not an individual visit's entry medium; a per-entry breakdown needs a future schema change. No browser NFC API or native app is required. Use the production AUTH_URL when generating/printing destinations.
+
+### Business categories and review tags
+
+Run `npm run db:seed:categories` against the intended `DATABASE_URL` to add missing default categories and their category-specific tags. This command does not create accounts or demo businesses and preserves existing names, icons, ordering, and active/inactive settings. No schema migration is required. The business dropdown reads active categories from the database; public review highlights come from the business category’s active tags. Groq receives that category and the selected tag names (tags remain optional).

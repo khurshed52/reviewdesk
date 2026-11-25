@@ -11,6 +11,7 @@ let calls = 0;
 let fail = false;
 let concurrentChange = false;
 let tagsAvailable = true;
+let tagName = "Service";
 const originalTime = new Date("2026-01-01");
 const makeSession = () => ({
   id: "session",
@@ -91,8 +92,10 @@ await mock.module("../../src/lib/prisma.ts", {
         }) => {
           assert.equal(where.categoryId, "category");
           assert.equal(where.isActive, true);
-          assert.deepEqual(where.id.in, ["tag"]);
-          return tagsAvailable ? [{ name: "Service" }] : [];
+          assert.deepEqual(where.id.in, session.selectedTags);
+          return tagsAvailable
+            ? where.id.in.map(() => ({ name: tagName }))
+            : [];
         },
       },
     },
@@ -110,13 +113,20 @@ await mock.module("../../src/lib/rate-limit.ts", {
 await mock.module("../../src/lib/groq.ts", {
   namedExports: {
     generateGroqReviews: async (input: {
+      category: string;
+      businessName: string;
       rating: number;
       tagNames: string[];
       locationName: string;
     }) => {
       calls++;
-      assert.equal(input.rating, 4);
-      assert.deepEqual(input.tagNames, ["Service"]);
+      assert.equal(input.rating, session.rating);
+      assert.equal(input.category, session.qrCode.location.business.category.name);
+      assert.equal(input.businessName, session.qrCode.location.business.name);
+      assert.deepEqual(
+        input.tagNames,
+        session.selectedTags.map(() => tagName),
+      );
       assert.equal(input.locationName, "Test branch");
       if (fail) throw new Error("Provider failed");
       if (concurrentChange) session.updatedAt = new Date("2027-01-01");
@@ -161,10 +171,28 @@ test("generation saves once, uses cache, preserves failures, checks ownership an
   concurrentChange = false;
   session = makeSession();
   session.selectedTags = [];
-  await assert.rejects(
-    () => generateReviewSuggestions(input),
-    /select one to three tags/,
-  );
+  assert.deepEqual(await generateReviewSuggestions(input), reviews);
+  for (const rating of [1, 2, 3, 4, 5]) {
+    for (let count = 0; count <= 3; count++) {
+      session = makeSession();
+      session.rating = rating;
+      session.selectedTags = Array.from(
+        { length: count },
+        (_, i) => "tag-" + i,
+      );
+      assert.deepEqual(await generateReviewSuggestions(input), reviews);
+    }
+  }
+  for (const category of ["Salon", "Clinic", "Gym", "Hotel", "Retail"]) {
+    session = makeSession();
+    session.qrCode.location.business.category.name = category;
+    tagName = category === "Salon" ? "Styling" : "Staff";
+    assert.deepEqual(await generateReviewSuggestions(input), reviews);
+  }
+  tagName = "Service";
+  session = makeSession();
+  session.selectedTags = ["a", "b", "c", "d"];
+  await assert.rejects(() => generateReviewSuggestions(input), /up to three/);
   session = makeSession();
   tagsAvailable = false;
   await assert.rejects(

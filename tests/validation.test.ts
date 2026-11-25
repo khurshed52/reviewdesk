@@ -79,7 +79,7 @@ test("Optional logo remains editable when blank and invalid URLs fail validation
   assert.equal(googleReviewUrlSchema.safeParse("not a URL").success, false);
 });
 
-test("Tag selections require one to three distinct valid IDs", async () => {
+test("Tag selections accept zero to three distinct valid IDs", async () => {
   const { reviewTagsSchema } = await import("../src/lib/validations");
   const ids = [
     "cmuk98xpg00000yzy3954aigp",
@@ -91,7 +91,7 @@ test("Tag selections require one to three distinct valid IDs", async () => {
     reviewTagsSchema.safeParse({ slug: "abcdefghijklmnop", selectedTags })
       .success;
   assert.equal(parse(ids.slice(0, 3)), true);
-  assert.equal(parse([]), false);
+  assert.equal(parse([]), true);
   assert.equal(parse(ids), false);
   assert.equal(parse([ids[0], ids[0]]), false);
   assert.equal(parse(["invalid"]), false);

@@ -1,3 +1,4 @@
+import { seedCategoryCatalog } from "./category-catalog";
 import "dotenv/config";
 import { randomBytes } from "node:crypto";
 import { hash } from "bcrypt";
@@ -5,6 +6,7 @@ import { prisma } from "../src/lib/prisma";
 import { emailSchema, passwordSchema } from "../src/lib/validations";
 
 async function main() {
+  await prisma.$transaction(seedCategoryCatalog, { maxWait: 15000, timeout: 60000 });
   const adminEmail = emailSchema.parse(process.env.SEED_ADMIN_EMAIL);
   const merchantEmail = emailSchema.parse(process.env.SEED_MERCHANT_EMAIL);
 
@@ -72,61 +74,7 @@ async function main() {
       },
     });
 
-    // Cafe category
-    const cafeCategory = await tx.category.upsert({
-      where: { slug: "cafe" },
-      update: {
-        name: "Cafe",
-        isActive: true,
-      },
-      create: {
-        name: "Cafe",
-        slug: "cafe",
-        isActive: true,
-        sortOrder: 1,
-      },
-    });
-
-    // Cafe review tags
-const cafeTags = [
-  { name: "Food", slug: "food", icon: "food" },
-  { name: "Drinks", slug: "drinks", icon: "coffee" },
-  { name: "Service", slug: "service", icon: "user" },
-  { name: "Ambience", slug: "ambience", icon: "ambience" },
-  { name: "Cleanliness", slug: "cleanliness", icon: "sparkles" },
-  { name: "Price", slug: "price", icon: "tag" },
-  { name: "Location", slug: "location", icon: "location" },
-  { name: "Variety", slug: "variety", icon: "grid" },
-  { name: "Speed", slug: "speed", icon: "clock" },
-  { name: "Friendly Staff", slug: "friendly-staff", icon: "team" },
-  { name: "Seating", slug: "seating", icon: "chair" },
-  { name: "Other", slug: "other", icon: "more" }
-];
-
-  for (const [index, tag] of cafeTags.entries()) {
-  await tx.reviewTag.upsert({
-    where: {
-      categoryId_slug: {
-        categoryId: cafeCategory.id,
-        slug: tag.slug,
-      },
-    },
-    update: {
-      name: tag.name,
-      icon: tag.icon,
-      isActive: true,
-      sortOrder: index + 1,
-    },
-    create: {
-      name: tag.name,
-      slug: tag.slug,
-      icon: tag.icon,
-      categoryId: cafeCategory.id,
-      isActive: true,
-      sortOrder: index + 1,
-    },
-  });
-}
+    const cafeCategory = await tx.category.findUniqueOrThrow({ where: { name: "Cafe" } });
 
     // Demo business
     const existingBusiness = await tx.business.findFirst({

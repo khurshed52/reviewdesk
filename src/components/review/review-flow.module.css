@@ -1,0 +1,340 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px 12px;
+  background: #edf5f1;
+  color: #152c26;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  min-height: min(690px, calc(100dvh - 32px));
+  border-radius: 28px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 12px 40px #183e3512;
+}
+.card h1 {
+  margin: 18px 0 10px;
+  font-size: 26px;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  outline: none;
+}
+.body {
+  padding: 22px;
+  text-align: center;
+}
+.hero {
+  padding: 25px 22px 42px;
+  text-align: center;
+  color: white;
+  background:
+    linear-gradient(#10291d55, #10291d99),
+    url("/images/review-welcome-cafe.png") center 48% / cover,
+    #14352c;
+}
+.hero h1 {
+  max-width: 310px;
+  margin: 24px auto 10px;
+  font-size: 30px;
+}
+.hero p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+.business {
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.location {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.experience .body {
+  position: relative;
+  margin-top: -24px;
+  background: white;
+  border-radius: 25px 25px 0 0;
+  padding: 16px;
+}
+.body :global(.experience-choice) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: #f7f9f7;
+  padding: 9px 1px;
+  min-height: 79px;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.body :global(.experience-choice span) {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.body :global(.experience-choice[aria-pressed="true"]) {
+  border-color: #168454;
+  background: #f0fcf3;
+  box-shadow: 0 2px 5px #176b5b20;
+  font-weight: 700;
+}
+.body button:focus-visible {
+  outline: 2px solid #176b5b;
+  outline-offset: 3px;
+}
+.body button:disabled {
+  cursor: not-allowed;
+}
+.tagsHeading {
+  text-align: left;
+  margin: 20px 0 12px;
+  font-size: 14px;
+}
+.tagsHeading span {
+  color: #67736c;
+  font-size: 12px;
+}
+.tag {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 43px;
+  border: 1px solid #e3e9e5;
+  border-radius: 13px;
+  padding: 8px 5px;
+  background: #fafcfb;
+  color: #23372e;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px #183e3508;
+}
+.tag svg {
+  flex-shrink: 0;
+}
+.tag span {
+  overflow-wrap: anywhere;
+}
+.tag[aria-pressed="true"] {
+  border-color: #168454;
+  background: #effaf3;
+  color: #176b5b;
+}
+.tag:disabled {
+  opacity: 0.5;
+}
+.check {
+  position: absolute;
+  right: -3px;
+  top: -5px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #168454;
+  color: white;
+  border: 1px solid white;
+}
+.count {
+  margin: 12px 0 18px;
+  color: #738279;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.primary:global(.ant-btn) {
+  height: auto;
+  min-height: 50px;
+  border-radius: 999px;
+  padding: 12px 15px;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: normal;
+}
+.primary:global(.ant-btn):not(:disabled) {
+  background: linear-gradient(160deg, #11945f, #07573f);
+  color: white;
+  border-color: #168454;
+  box-shadow: 0 6px 14px #176b5b26;
+}
+.primary:global(.ant-btn):not(:disabled):hover {
+  background: #176b5b;
+  border-color: #176b5b;
+}
+.secondary:global(.ant-btn) {
+  min-height: 45px;
+  height: auto;
+  border-radius: 999px;
+  margin: 12px 0;
+  color: #203b30;
+}
+.header {
+  position: relative;
+  padding: 28px 20px 15px;
+}
+.header > button {
+  position: absolute;
+  left: 12px;
+  top: 20px;
+}
+.brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  font-size: 16px;
+  font-weight: 750;
+  color: #15231d;
+}
+.brand span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: #128453;
+}
+.subtitle {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 auto 24px;
+  max-width: 330px;
+  color: #39463e;
+}
+.review {
+  touch-action: pan-y pinch-zoom;
+  background: #edf9f2;
+  border-radius: 20px;
+  padding: 18px;
+  text-align: left;
+  margin-top: 24px;
+}
+.review > svg {
+  color: #168454;
+}
+.review > p {
+  margin: 4px 0 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.reviewFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+.stars {
+  display: flex;
+  gap: 1px;
+  color: #efb516;
+}
+.optionDots {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 8px 0 14px;
+}
+.optionDots button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.optionDots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dae9e2;
+}
+.optionDots .activeDot {
+  background: #168454;
+}
+.success {
+  display: grid;
+  place-items: center;
+  width: 86px;
+  height: 86px;
+  margin: 28px auto 24px;
+  border-radius: 50%;
+  background: #c8f4df;
+  color: #168454;
+}
+.instructions {
+  list-style: none;
+  padding: 18px;
+  margin: 28px 0 32px;
+  border-radius: 18px;
+  background: #f1f7f4;
+  text-align: left;
+  display: grid;
+  gap: 15px;
+}
+.instructions li {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.instructions svg {
+  flex-shrink: 0;
+}
+.manualCopy {
+  text-align: left;
+  padding: 12px;
+  border: 1px solid #dce8df;
+  border-radius: 12px;
+  white-space: pre-wrap;
+}
+.error,
+.notice {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 14px 0 0;
+}
+.error {
+  color: #a32b29;
+}
+.notice {
+  color: #64756c;
+}
+.disclaimer {
+  font-size: 10px;
+  color: #7b887f;
+  margin: 15px 0 0;
+}
+@media (max-width: 450px) {
+  .shell {
+    padding: 0;
+    background: white;
+  }
+  .card {
+    border-radius: 0;
+    min-height: 100dvh;
+    box-shadow: none;
+  }
+}
+
+.categoryHero {
+  background: radial-gradient(ellipse at top right, #477b65, #14352c 75%);
+}

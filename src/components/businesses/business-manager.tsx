@@ -18,7 +18,6 @@ import {
   Tag,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { categories } from "@/lib/validations";
 import {
   saveBusinessAction,
   deleteBusinessAction,
@@ -28,11 +27,13 @@ import type { listBusinesses } from "@/services/business.service";
 type Row = Awaited<ReturnType<typeof listBusinesses>>[number];
 export function BusinessManager({
   rows,
+  categories = [],
   canCreate = true,
   title = "Businesses",
   readOnly = false,
 }: {
   rows: Row[];
+  categories?: { name: string }[];
   canCreate?: boolean;
   title?: string;
   readOnly?: boolean;
@@ -215,7 +216,7 @@ export function BusinessManager({
             rules={[{ required: true }]}
           >
             <Select
-              options={categories.map((value) => ({ value, label: value }))}
+              options={categories.map(({ name }) => ({ value: name, label: name }))}
               placeholder="Select a category"
             />
           </Form.Item>

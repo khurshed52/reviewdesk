@@ -21,7 +21,8 @@
     "db:seed": "prisma db seed",
     "test:e2e": "playwright test",
     "test:generation": "node --conditions=react-server --experimental-test-module-mocks --import tsx --test tests/generation/*.test.ts",
-    "test:analytics": "node --conditions=react-server --experimental-test-module-mocks --import tsx --test tests/analytics/*.test.ts"
+    "test:analytics": "node --conditions=react-server --experimental-test-module-mocks --import tsx --test tests/analytics/*.test.ts",
+    "db:seed:categories": "tsx prisma/seed-categories.ts"
   },
   "dependencies": {
     "@ant-design/cssinjs": "^2.1.2",

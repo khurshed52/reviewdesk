@@ -158,6 +158,20 @@ test("merchant CRUD, QR preview/download, review persistence, admin guards and m
     ).toBe(0);
     const customerContext = await browser.newContext();
     const customer = await customerContext.newPage();
+    await customer.route("**/r/**", async (route) => {
+      const request = route.request();
+      if (request.method() === "POST" && request.headers()["next-action"]) {
+        const payload = JSON.parse(request.postData()!)[0];
+        if ("regenerate" in payload) {
+          await route.fulfill({
+            contentType: "text/x-component",
+            body: '0:{"a":"$@1","b":"development","f":""}\n1:{"success":false,"transient":true,"error":"AI is busy right now. Please try again."}\n',
+          });
+          return;
+        }
+      }
+      await route.continue();
+    });
     await customer.goto(publicUrl);
     await expect(
       customer.getByRole("heading", { name: "How was your experience?" }),
@@ -168,32 +182,22 @@ test("merchant CRUD, QR preview/download, review persistence, admin guards and m
     expect(
       await prisma.reviewSession.count({ where: { qrCodeId: qr.id } }),
     ).toBe(0);
-    await customer
-      .getByRole("button", { name: "Share Your Experience", exact: true })
-      .click();
     await customer.getByRole("button", { name: "Good", exact: true }).click();
-    await customer.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      customer.getByText("2 of 4", {
-        exact: true,
-      }),
-    ).toBeVisible();
+    await customer
+      .getByRole("button", { name: "Create My Review", exact: true })
+      .click();
+    await expect(customer.getByRole("status")).toBeVisible();
     expect(
       await prisma.reviewSession.count({ where: { qrCodeId: qr.id } }),
     ).toBe(1);
     await customer.reload();
     await customer
-      .getByRole("button", { name: "Share Your Experience", exact: true })
-      .click();
-    await customer
       .getByRole("button", { name: "Excellent", exact: true })
       .click();
-    await customer.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      customer.getByText("2 of 4", {
-        exact: true,
-      }),
-    ).toBeVisible();
+    await customer
+      .getByRole("button", { name: "Create My Review", exact: true })
+      .click();
+    await expect(customer.getByRole("status")).toBeVisible();
     expect(
       await prisma.reviewSession.count({ where: { qrCodeId: qr.id } }),
     ).toBe(1);

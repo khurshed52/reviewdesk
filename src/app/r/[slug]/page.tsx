@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ReviewLoading } from "./review-loading";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 
@@ -41,18 +43,30 @@ export default async function ReviewPage({
     }
   });
 
-  const reviewState = await getExistingReviewState(slug);
+  return (
+    <Suspense fallback={<ReviewLoading category={qr.location.business.category.name} />}>
+      <ResolvedReviewPage slug={slug} qr={qr} />
+    </Suspense>
+  );
+}
 
+async function ResolvedReviewPage({ slug, qr }: {
+  slug: string;
+  qr: NonNullable<Awaited<ReturnType<typeof resolvePublicQR>>>;
+}) {
+  const reviewState = await getExistingReviewState(slug);
   const business = qr.location.business;
 
   return (
     <ReviewForm
       slug={slug}
       business={business.name}
+      category={business.category.name}
       location={qr.location.name}
       logoUrl={business.logoUrl}
       initialReviewState={reviewState.state}
       existingGoogleReviewUrl={reviewState.googleReviewUrl}
+      initialReviewText={reviewState.reviewText}
       tags={business.category.tags.map((tag) => ({
         id: tag.id,
         name: tag.name,

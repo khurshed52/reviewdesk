@@ -1,5 +1,12 @@
 import {
   Armchair,
+  Scissors,
+  Stethoscope,
+  Dumbbell,
+  BedDouble,
+  BookOpen,
+  Car,
+  Wrench,
   Clock3,
   Coffee,
   Grid2X2,
@@ -15,6 +22,13 @@ import {
 } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
+  scissors: Scissors,
+  stethoscope: Stethoscope,
+  dumbbell: Dumbbell,
+  bed: BedDouble,
+  book: BookOpen,
+  car: Car,
+  wrench: Wrench,
   food: Utensils,
   coffee: Coffee,
   user: UserRound,

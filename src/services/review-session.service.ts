@@ -74,6 +74,7 @@ export async function getExistingReviewState(slug: string) {
     return {
       state: "NEW" as const,
       googleReviewUrl: null,
+      reviewText: null,
     };
   }
 
@@ -85,6 +86,7 @@ export async function getExistingReviewState(slug: string) {
       },
     },
     select: {
+      reviewText: true,
       status: true,
       clickedGoogle: true,
       confirmedPostedAt: true,
@@ -104,6 +106,7 @@ export async function getExistingReviewState(slug: string) {
     return {
       state: "NEW" as const,
       googleReviewUrl: null,
+      reviewText: null,
     };
   }
 
@@ -111,6 +114,7 @@ export async function getExistingReviewState(slug: string) {
     return {
       state: "COMPLETED" as const,
       googleReviewUrl: session.qrCode.location.googleReviewUrl,
+      reviewText: session.reviewText,
     };
   }
 
@@ -118,12 +122,14 @@ export async function getExistingReviewState(slug: string) {
     return {
       state: "GOOGLE_CLICKED" as const,
       googleReviewUrl: session.qrCode.location.googleReviewUrl,
+      reviewText: session.reviewText,
     };
   }
 
   return {
     state: "IN_PROGRESS" as const,
     googleReviewUrl: null,
+    reviewText: null,
   };
 }
 
@@ -166,9 +172,7 @@ export async function saveRating(input: unknown) {
       existing?.status === "GOOGLE_CLICKED" ||
       existing?.clickedGoogle
     ) {
-      throw new AppError(
-        "You have already completed this review experience.",
-      );
+      throw new AppError("You have already completed this review experience.");
     }
 
     await tx.reviewSession.upsert({
@@ -333,9 +337,7 @@ export async function saveReviewForGoogle(input: unknown) {
     );
 
     if (!url.success) {
-      throw new AppError(
-        "This location's Google review link is unavailable.",
-      );
+      throw new AppError("This location's Google review link is unavailable.");
     }
 
     const result = await tx.reviewSession.updateMany({
