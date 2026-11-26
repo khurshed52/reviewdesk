@@ -1,256 +1,114 @@
-# Reviewdesk
 
-A multi-merchant review platform built with **Next.js 16.3.6 App Router**, strict TypeScript, Ant Design 6, Tailwind CSS 4, PostgreSQL, Prisma 7, Auth.js Credentials, Zod and bcrypt. No React Hook Form, OpenAI or payment integration.
+# ReviewDesk — AI-Powered Review Management Platform
 
-## Prerequisites
+A full-stack, multi-tenant review management platform
+that helps businesses manage customer feedback through
+QR codes, NFC, AI-assisted reviews, and analytics.
 
-- Node.js **22.12+** (Node 24 is supported)
-- npm
-- PostgreSQL 17+ locally or a hosted PostgreSQL database
-- Optional: Docker Compose for the supplied local database configuration
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma)
+![Ant Design](https://img.shields.io/badge/Ant_Design-0170FE?style=flat-square&logo=antdesign)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![AI](https://img.shields.io/badge/AI-Groq-F55036?style=flat-square)
+![Playwright](https://img.shields.io/badge/Testing-Playwright-2EAD33?style=flat-square)
 
-## Installation and local development
+## Overview
 
-```bash
-npm install
-cp .env.example .env
+ReviewDesk is an independently developed full-stack
+application demonstrating multi-tenant architecture,
+AI integration, secure authentication, role-based
+authorization, relational database design, and
+responsive dashboard development.
+
+## Key Features
+
+- Multi-tenant merchant management
+- Business and branch management
+- QR code generation and NFC-compatible review links
+- AI-assisted customer review generation
+- Google Review handoff
+- Merchant and administrator dashboards
+- Review analytics and conversion tracking
+- Role-based access control (RBAC)
+- Server-side tenant isolation
+- Responsive mobile-first interfaces
+- Unit, integration, and end-to-end tests
+
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript |
+| UI | Ant Design 6, Tailwind CSS 4 |
+| Backend | Next.js Server Actions, Server Components |
+| Database | PostgreSQL |
+| ORM | Prisma 7 |
+| Authentication | Auth.js, JWT, bcrypt |
+| Authorization | RBAC, Tenant-based access control |
+| AI Integration | Groq SDK |
+| Validation | Zod |
+| Testing | Playwright, Node.js Test Runner |
+| Code Quality | ESLint, Prettier |
+
+## Engineering Highlights
+
+### Multi-Tenant Architecture
+
+Merchant data is isolated through server-side ownership
+validation and tenant-scoped database queries.
+
+### Authentication and Authorization
+
+Auth.js Credentials, bcrypt password hashing, JWT sessions,
+role-based permissions, and server-side authorization checks.
+
+### AI-Assisted Review Workflow
+
+Customers access a public review page through QR or NFC,
+select their experience, generate review suggestions,
+edit their preferred review, and manually submit it to Google.
+
+### Data Integrity
+
+Relational database modeling, unique constraints,
+indexed ownership relationships, and idempotent
+review-session interactions.
+
+### Testing Strategy
+
+Unit, integration, and end-to-end tests cover validation,
+authentication, tenant isolation, business management,
+QR workflows, and analytics.
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    A[Merchant / Admin] --> B[Next.js Dashboard]
+    C[Customer] --> D[QR / NFC Review Page]
+    B --> E[Server Actions and Services]
+    D --> E
+    E --> F[Authentication and Authorization]
+    E --> G[Prisma ORM]
+    G --> H[(PostgreSQL)]
+    E --> I[AI Review Generation]
+    I --> J[Groq]
+    D --> K[Google Review Handoff]
 ```
 
-Edit `.env` before continuing. Generate a strong authentication secret:
+## Author
 
-```bash
-node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"
-```
+**Khurshed Khan**
 
-Create the database using an existing PostgreSQL installation:
+Senior Frontend & Full-Stack Developer | 9+ Years
 
-```bash
-createuser --pwprompt reviewdesk
-createdb --owner=reviewdesk reviewdesk
-```
+- [Portfolio](https://www.khurshedkhan.dev/)
+- [GitHub](https://github.com/khurshed52)
 
-Alternatively, set `POSTGRES_PASSWORD` in your shell or `.env`, then:
+---
 
-```bash
-docker compose up -d
-```
+## Technical Documentation
 
-Set `DATABASE_URL` to the corresponding `postgresql://USER:PASSWORD@HOST:5432/reviewdesk` URL. URL-encode special characters in credentials. Use your provider's required TLS parameters for remote databases.
-
-```bash
-npx prisma generate
-npx prisma migrate dev
-npx prisma db seed
-npm run dev
-```
-
-Open http://localhost:3000. If another app occupies that address, use `npm run dev -- --port 3001` and set `AUTH_URL=http://localhost:3001`. A public QR code uses `AUTH_URL`, so set it to a reachable HTTPS domain before printing or distributing codes.
-
-The seed is optional; registration creates a new merchant workspace without demo data. For an existing production database, use `npx prisma migrate deploy` instead of `migrate dev`.
-
-## Checking registration database connections
-
-Registration uses a Prisma nested write: the MERCHANT user and linked Merchant are committed together. Temporary registration diagnostic logs have been removed.
-
-Run the app and Prisma Studio from the same project folder and compare the database host **and port**, not just its name. A second project copy can use another PostgreSQL server with the same database name. Refresh Studio after registering.
-
-During local troubleshooting, this checkout runs at `http://localhost:3002` (`npm run dev -- --port 3002`), with `AUTH_URL` set to that origin. An older ReviewDesk copy was running at `http://127.0.0.1:3000` against PostgreSQL port `55432`; this checkout and its Studio use PostgreSQL port `5432`. Use the correct app URL and restart the dev server after changing environment variables. These are local development settings, not production defaults.
-
-## Environment variables
-
-| Variable                 | Purpose                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`           | Private PostgreSQL connection string.                                                                                    |
-| `AUTH_SECRET`            | Random secret of at least 32 bytes for Auth.js and signed visitor cookies.                                               |
-| `AUTH_URL`               | Canonical application origin, e.g. `https://reviews.example.com`.                                                        |
-| `SEED_ADMIN_EMAIL`       | Email of the initial administrator.                                                                                      |
-| `SEED_ADMIN_PASSWORD`    | Administrator password, 12+ characters and at most 72 UTF-8 bytes.                                                       |
-| `SEED_MERCHANT_EMAIL`    | Email of the example merchant. Must differ from the admin email.                                                         |
-| `SEED_MERCHANT_PASSWORD` | Example merchant password with the same constraints.                                                                     |
-| `TRUST_PROXY`            | Default `false`. Set `true` only when your reverse proxy overwrites `X-Forwarded-For` with a trustworthy client address. |
-| `SUPPORT_EMAIL`          | Optional contact address on the password-help page.                                                                      |
-| `POSTGRES_PASSWORD`      | Only used by the optional local Docker Compose database. Match it in `DATABASE_URL`.                                     |
-
-Secrets are server-only and must not use the `NEXT_PUBLIC_` prefix. `.env` is gitignored and is not included in the source archive.
-
-## Seeded users and data
-
-Seeding creates one ADMIN user and one MERCHANT user from the environment variables. The merchant owns **Sunday Hospitality → Sunday Coffee → Downtown → Front Counter QR**. Passwords use bcrypt cost 12. Re-running the seed does not overwrite existing passwords, change roles, or duplicate the sample business.
-
-The sample location has a generic Google Maps URL. **Replace it with your actual branch's Google Review URL before sharing the QR.** No production password is hardcoded or printed.
-
-## Project structure
-
-```text
-prisma/
-  schema.prisma
-  migrations/                 # Committed PostgreSQL migrations
-  seed.ts
-src/
-  app/
-    layout.tsx                # Root HTML, SSR styles and providers
-    (auth)/                   # Primary auth layout
-      login/ register/ forgot-password/
-    (dashboard)/              # Primary dashboard layout
-      dashboard/ businesses/[id]/ locations/[id]/
-      qr-codes/ analytics/ settings/
-      admin/merchants/ admin/businesses/ admin/usage/
-    api/auth/[...nextauth]/
-    r/[slug]/                 # Public, anonymous review flow
-    unauthorized/
-    error.tsx global-error.tsx not-found.tsx loading.tsx
-  actions/                    # Validated server mutations and notifications' results
-  components/
-    auth/ layout/ common/ dashboard/ businesses/ locations/
-    qr/ review/ admin/ settings/
-  lib/
-    auth.ts permissions.ts prisma.ts rate-limit.ts
-    errors.ts utils.ts validations/
-  providers/app-provider.tsx
-  services/
-    merchant.service.ts business.service.ts location.service.ts
-    qr.service.ts qr-scan.service.ts review-session.service.ts analytics.service.ts
-  generated/prisma/           # Generated, gitignored
-tests/
-  validation.test.ts
-  integration/tenant.test.ts
-  e2e/platform.spec.ts
-```
-
-There are exactly two primary application layouts, plus the required root layout. The public review page does not inherit dashboard navigation. Server Components load data; client components handle interactive Ant Design forms, tables and dialogs.
-
-## Prisma schema
-
-```text
-User (ADMIN or MERCHANT)
-  → Merchant (unique owner)
-    → Business
-      → Location (its own Google Review URL)
-        → QRCode (unique random slug, source, active flag)
-          → QRScan (one record per active review page opening)
-          → ReviewSession (rating, tags, text, Google-click flag)
-```
-
-Deletion cascades down this hierarchy. Delete dialogs explain the cascading effect. Foreign-key indexes support ownership queries. `ReviewSession` adds a private hashed `visitorKey` and a composite unique constraint on `(qrCodeId, visitorKey)` for idempotent interactions. `RateLimit` stores shared, atomic abuse counters in PostgreSQL; no Auth.js adapter tables are needed for Credentials with JWT sessions.
-
-## Authentication
-
-- Ant Design Form validates basic input; reusable Zod schemas validate again on the server.
-- Registration normalizes email, validates password confirmation and bcrypt's byte limit, hashes with bcrypt, and creates User + Merchant atomically using a nested Prisma write. The role is always MERCHANT; client-provided roles are ignored.
-- Login uses Auth.js Credentials and bcrypt comparison. Credentials never enter the JWT. JWTs contain the user identity, with a 24-hour session lifetime.
-- `requireUser()` reloads the user and role from PostgreSQL, so deleted users and role changes take effect without trusting stale role claims.
-- Next.js Server Function argument logging is disabled so development logs do not expose credentials.
-- Auth.js handles CSRF, session cookies and logout. Authenticated auth-page visitors redirect to `/dashboard`; protected routes redirect anonymous visitors to `/login`.
-- Auth.js v5 is installed at the exact `5.0.0-beta.32` release for its App Router API. Its beta status is explicit; review future upgrades before deployment.
-- `/forgot-password` is an honest support/help page. Automated reset emails and token recovery are **not implemented** because an email delivery provider was not specified; it does not pretend to send email.
-
-## Authorization
-
-Every protected service authenticates before querying. `businessScope`, `locationScope` and `qrScope` filter through the ownership hierarchy. `assertBusinessOwnership`, `assertLocationOwnership` and `assertQRCodeOwnership` reject foreign resources with a non-disclosing not-found state. Writes include tenant predicates as well as ownership checks. Location and QR creation validate the selected parent on the server. A location cannot be reassigned to a different business.
-
-Merchant IDs are always derived from the signed-in account. ADMIN users can inspect and manage existing records globally. Merchant creation remains self-service registration; administrators without their own merchant workspace do not create tenant-owned businesses from an ambiguous global form. Every admin page independently calls `requireAdmin()`; menu visibility is not a security boundary.
-
-## QR and public review architecture
-
-- `crypto.randomBytes(12)` produces a 96-bit, 16-character URL-safe slug, backed by a unique database constraint.
-- The `qrcode` package renders a 1024px PNG containing `${AUTH_URL}/r/${slug}`. Merchants can preview, download, copy, deactivate and reactivate codes.
-- Public resolution loads the QR, its location, business and merchant. Inactive links show an unavailable Result; invalid links show a 404 Result.
-- Opening or refreshing a valid, active `/r/[slug]` page records a `QRScan`. Invalid and inactive links do not record scans. Repeated openings count separately, not as unique visitors.
-- Create My Review saves the selected experience (internally 1–5) and optional tags to the anonymous session before generation. Simply loading or refreshing the page does not create a session.
-- An HMAC-signed, HttpOnly, SameSite=Lax visitor cookie expires after 24 hours. A per-page visit ID is combined with the signed cookie in a keyed hash stored in the database. Repeated actions in the same visit update one session. Opening or reloading the link starts a fresh form and creates a separate session only when a rating is saved; previous submissions are preserved. Returning from the Google tab keeps the current mounted visit. This is not a unique-person metric. Visitor generation rate limits still use the stable cookie identity.
-- The customer selects or edits one suggestion, copies it, and opens Google to post manually. Existing handoff and user-confirmed completion analytics remain separate.
-- No customer email, phone number or name is requested. `selectedTags` stores up to three active category tag IDs; `generatedReviews` stores validated suggestions and `reviewText` stores the chosen suggestion.
-
-## Dashboard and UI
-
-Six live KPI cards show business count, location count, QR count, QR scans, Google clicks and conversion (`clicks / sessions`, zero-safe). Top locations are ranked by scan count. Recent review activity, scan counts and recent businesses use tenant-scoped data. Administrators see global aggregates.
-
-Ant Design provides all controls, tables, forms, notifications, dialogs and primary layout components. SSR styles use `@ant-design/nextjs-registry`; contextual messages use `App.useApp()`. Tailwind supplies layout utilities only, with no preflight reset competing with Ant Design. Mobile navigation uses a Drawer and wide tables scroll within their cards. Dates render consistently in UTC to avoid hydration mismatches.
-
-## Verification
-
-```bash
-npx prisma format
-npx prisma validate
-npm run typecheck
-npm run lint
-npm run format:check
-npm test
-npm run test:integration
-npm run build
-```
-
-Integration tests require a **dedicated test database** through `DATABASE_URL`. They create uniquely named records and remove them afterward. Never point test scripts at a production database.
-
-For browser tests, seed that test database and start the application in another terminal:
-
-```bash
-npx playwright install chromium
-npm run build
-npm start
-# In another terminal:
-npm run test:e2e
-```
-
-`E2E_BASE_URL` overrides the default local test address. Set `AUTH_URL` to the same origin before starting the app. `PLAYWRIGHT_EXECUTABLE_PATH` optionally selects an existing Chromium executable.
-
-The browser suite covers registration, login/logout, auth redirects, forbidden admin access, foreign business IDs, business/location create/update/delete, QR generation/preview/download/copy, inactive and invalid links, session deduplication, Google-click recording, conversion and mobile navigation. Google navigation is intercepted in tests, so no external review is submitted. The integration suite checks all three ownership helpers, tenant-filtered analytics and the review-session uniqueness constraint.
-
-Webpack is selected explicitly for development/build portability; Turbopack's compiler worker port is restricted in some desktop sandboxes. This is a supported Next.js build mode.
-
-## Production operation
-
-```bash
-npm ci
-npx prisma generate
-npx prisma migrate deploy
-npm run build
-npm start
-```
-
-Provide PostgreSQL and server environment variables, terminate HTTPS at a trusted reverse proxy, and set `AUTH_URL` to the public HTTPS origin. Run one migration job per deployment, back up the database, and restrict database access to the application. No deployment or paid service is provisioned by this project.
-
-Login, registration and review interactions use atomic PostgreSQL rate limits. Without a trusted proxy, IP-based limits share one fallback bucket; configure `TRUST_PROXY` appropriately before a multi-user public launch. Rate limits are abuse mitigation, not bot-proof identity verification. Expired counters can be periodically removed with:
-
-```sql
-DELETE FROM "RateLimit" WHERE "expiresAt" < NOW() - INTERVAL '1 day';
-```
-
-Keep the lockfile. The two dependency overrides pin patched `deepmerge-ts` and `mysql2` ranges used by Prisma tooling; the audited install has no known npm advisories at verification time. The app itself uses PostgreSQL only.
-
-Tables currently paginate the loaded tenant dataset in the browser. Large tenants will benefit from database-backed pagination and aggregate query optimization in a later scaling pass. Set your review-session retention policy according to your deployment needs.
-
-## Intentionally postponed
-
-Translation, Stripe, subscriptions, billing, WhatsApp API, Google Business Profile API and automated password-recovery email delivery. Settings displays account/workspace details; it does not introduce unrequested account-edit or billing features.
-
-
-## Public review flow: QR and NFC
-
-Both QR and NFC open the same HTTPS destination: /r/{slug}. The route loader and non-blocking after() scan recording remain in place. There are three customer screens:
-1. Experience and optional highlights: choose an experience, optionally select up to three active category tags, then Create My Review.
-2. AI review: view one suggestion, cycle cached suggestions with Try Another, regenerate after the cache is exhausted, or Edit inline (500 characters maximum).
-3. Google handoff: Use This Review saves the original selection and final edited text, marks GOOGLE_CLICKED using the existing service, and attempts clipboard copying. Open Google Review opens the configured Google URL in a new tab with same-tab fallback if blocked. Nothing is posted automatically.
-
-A hidden-then-visible transition opens the return confirmation. Yes, done saves confirmedPostedAt (user-confirmed, not Google-verified). Reopening a handed-off session shows recovery; confirmed sessions show Thank you, without restarting the journey.
-
-### Groq
-
-Set server-only GROQ_API_KEY. The existing Groq SDK/model, response schema, rate limits and 503/429 retries are unchanged. Zero to three tags are accepted. With no tags the prompt permits general subjective experience only, without inventing products or specific qualities. All five experience levels keep their corresponding sentiment and can continue to Google. Failed regeneration preserves saved suggestions.
-
-### Programming NFC cards
-
-Write an NDEF URI record containing the exact public HTTPS review URL, for example:
-https://reviewdesk-olive.vercel.app/r/{slug}
-
-Optional entry hints are also accepted:
-- QR: /r/{slug}?entry=qr
-- NFC: /r/{slug}?entry=nfc
-
-These hints do not change the flow and are not persisted or reported separately. Existing QRScan counts every valid public opening, including NFC, and the funnel calculations are unchanged. QRCode.source describes placement, not an individual visit's entry medium; a per-entry breakdown needs a future schema change. No browser NFC API or native app is required. Use the production AUTH_URL when generating/printing destinations.
-
-### Business categories and review tags
-
-Run `npm run db:seed:categories` against the intended `DATABASE_URL` to add missing default categories and their category-specific tags. This command does not create accounts or demo businesses and preserves existing names, icons, ordering, and active/inactive settings. No schema migration is required. The business dropdown reads active categories from the database; public review highlights come from the business category’s active tags. Groq receives that category and the selected tag names (tags remain optional).
-
-Review suggestions rotate every seven seconds while visible and idle. Touch, swipe, focus, editing, or selection pauses rotation; the Pause/Auto-play control also allows manual control. Reduced-motion preferences disable automatic rotation.
