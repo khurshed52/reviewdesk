@@ -338,3 +338,86 @@
 .categoryHero {
   background: radial-gradient(ellipse at top right, #477b65, #14352c 75%);
 }
+
+.carouselHint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64756c;
+  margin-top: 6px;
+}
+.carouselHint button {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: #176b5b;
+  font: inherit;
+}
+/* Compact mobile composition. Very short screens / large text can still scroll. */
+@media (max-width: 450px) {
+  .hero { padding: 12px 16px 28px; }
+  .hero h1 { font-size: 25px; margin: 10px auto 6px; }
+  .hero p { font-size: 12px; line-height: 1.35; }
+  .business { font-size: 18px; letter-spacing: 2px; }
+  .location { font-size: 11px; margin-top: 2px; }
+  .experience .body { padding: 12px; }
+  .body :global(.experience-choice) { min-height: 65px; gap: 4px; padding: 5px 1px; }
+  .body :global(.experience-choice svg) { width: 30px; height: 30px; }
+  .tagsHeading { margin: 10px 0 8px; }
+  .tag { min-height: 44px; padding: 5px 3px; }
+  .count { margin: 6px 0 8px; }
+  .disclaimer { margin: 8px 0 0; }
+  .experience .primary { position: sticky; bottom: max(8px, env(safe-area-inset-bottom)); z-index: 2; }
+  .header { padding: 16px 16px 8px; }
+  .header > button { top: 9px; }
+  .suggestions .body { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  .suggestions h1 { font-size: 24px; margin: 10px 0 8px; }
+  .subtitle { font-size: 13px; margin-bottom: 12px; }
+  .review { margin-top: 12px; padding: 14px; }
+  .review > p { font-size: 15px; line-height: 1.45; margin-bottom: 8px; }
+  .reviewFooter { margin-top: 8px; }
+  .optionDots { margin: 0 0 4px; }
+  .secondary:global(.ant-btn) { margin: 8px 0; }
+}
+@media (max-width: 450px) and (max-height: 700px) {
+  .hero { padding-top: 8px; }
+  .hero h1 { font-size: 22px; margin: 6px auto; }
+  .hero p br { display: none; }
+  .hero :global(.ant-avatar) { display: none; }
+  .experience .body { padding: 10px; }
+}
+
+/* Let taller phones breathe without pushing the CTA off shorter screens. */
+@media (max-width: 450px) {
+  .experience {
+    --experience-space: clamp(0px, calc((100dvh - 620px) / 12), 16px);
+  }
+  .experience .hero {
+    padding-top: calc(12px + var(--experience-space));
+    padding-bottom: calc(32px + var(--experience-space));
+  }
+  .experience .hero h1 {
+    margin-top: calc(10px + var(--experience-space));
+    margin-bottom: calc(6px + var(--experience-space) / 2);
+  }
+  .experience .body {
+    padding-top: calc(12px + var(--experience-space) / 2);
+    padding-bottom: max(calc(24px + var(--experience-space)), env(safe-area-inset-bottom));
+  }
+  .experience .tagsHeading {
+    margin-top: calc(12px + var(--experience-space));
+    margin-bottom: calc(10px + var(--experience-space) / 2);
+  }
+  .experience [aria-label="Experience tags"] {
+    row-gap: calc(8px + var(--experience-space) / 2);
+  }
+  .experience .count {
+    margin-top: calc(8px + var(--experience-space) / 2);
+    margin-bottom: calc(10px + var(--experience-space));
+  }
+  .experience .disclaimer {
+    margin-top: calc(12px + var(--experience-space) / 2);
+  }
+}

@@ -157,7 +157,7 @@ Merchant IDs are always derived from the signed-in account. ADMIN users can insp
 - Public resolution loads the QR, its location, business and merchant. Inactive links show an unavailable Result; invalid links show a 404 Result.
 - Opening or refreshing a valid, active `/r/[slug]` page records a `QRScan`. Invalid and inactive links do not record scans. Repeated openings count separately, not as unique visitors.
 - Create My Review saves the selected experience (internally 1–5) and optional tags to the anonymous session before generation. Simply loading or refreshing the page does not create a session.
-- An HMAC-signed, HttpOnly, SameSite=Lax visitor cookie expires after 24 hours. Only its keyed hash is stored in the database. Repeated interactions with the same QR and cookie update one session. Clearing cookies or using another browser creates a new session; this is not a unique-person metric.
+- An HMAC-signed, HttpOnly, SameSite=Lax visitor cookie expires after 24 hours. A per-page visit ID is combined with the signed cookie in a keyed hash stored in the database. Repeated actions in the same visit update one session. Opening or reloading the link starts a fresh form and creates a separate session only when a rating is saved; previous submissions are preserved. Returning from the Google tab keeps the current mounted visit. This is not a unique-person metric. Visitor generation rate limits still use the stable cookie identity.
 - The customer selects or edits one suggestion, copies it, and opens Google to post manually. Existing handoff and user-confirmed completion analytics remain separate.
 - No customer email, phone number or name is requested. `selectedTags` stores up to three active category tag IDs; `generatedReviews` stores validated suggestions and `reviewText` stores the chosen suggestion.
 
@@ -252,3 +252,5 @@ These hints do not change the flow and are not persisted or reported separately.
 ### Business categories and review tags
 
 Run `npm run db:seed:categories` against the intended `DATABASE_URL` to add missing default categories and their category-specific tags. This command does not create accounts or demo businesses and preserves existing names, icons, ordering, and active/inactive settings. No schema migration is required. The business dropdown reads active categories from the database; public review highlights come from the business category’s active tags. Groq receives that category and the selected tag names (tags remain optional).
+
+Review suggestions rotate every seven seconds while visible and idle. Touch, swipe, focus, editing, or selection pauses rotation; the Pause/Auto-play control also allows manual control. Reduced-motion preferences disable automatic rotation.

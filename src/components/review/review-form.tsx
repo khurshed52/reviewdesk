@@ -28,6 +28,7 @@ import {
 type Screen = "experience" | "review" | "google";
 type Props = {
   slug: string;
+  visitId: string;
   business: string;
   category: string;
   location: string;
@@ -54,6 +55,7 @@ async function copyText(text: string) {
 }
 export function ReviewForm({
   slug,
+  visitId: initialVisitId,
   business,
   category,
   location,
@@ -63,6 +65,7 @@ export function ReviewForm({
   existingGoogleReviewUrl,
   initialReviewText,
 }: Props) {
+  const [visitId] = useState(initialVisitId);
   const [screen, setScreen] = useState<Screen>(
     ["GOOGLE_CLICKED", "COMPLETED"].includes(initialReviewState)
       ? "google"
@@ -78,6 +81,8 @@ export function ReviewForm({
   const reviewDrafts = useRef<Record<number, string>>({});
   const swipeStart = useRef<{ x: number; y: number; id: number } | null>(null);
   const [reviewText, setReviewText] = useState(initialReviewText ?? "");
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [logoFailed, setLogoFailed] = useState(false);
   const [editing, setEditing] = useState(false);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(
     existingGoogleReviewUrl ?? "",
@@ -121,6 +126,18 @@ export function ReviewForm({
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
+  useEffect(() => {
+    if (screen !== "review" || !autoRotate || editing || busy || error || reviews.length < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible" || pending.current) return;
+      const next = (reviewIndex + 1) % reviews.length;
+      setReviewIndex(next);
+      setReviewText(reviewDrafts.current[next] ?? reviews[next]);
+    }, 7000);
+    return () => window.clearInterval(timer);
+  }, [screen, autoRotate, editing, busy, error, reviews, reviewIndex]);
+
   function clearError() {
     setError("");
     setTransient(false);
@@ -145,7 +162,7 @@ export function ReviewForm({
       let changed = false;
       if (!regenerate) {
         if (savedRating.current !== rating) {
-          const result = await saveRatingAction({ slug, rating });
+          const result = await saveRatingAction({ slug, visitId, rating });
           if (!result.success) {
             setError(result.error);
             return;
@@ -156,7 +173,7 @@ export function ReviewForm({
         }
         const key = [...selectedTags].sort().join(",");
         // Save [] too, so removing every highlight clears previous tags.
-        const saved = await saveTagsAction({ slug, selectedTags });
+        const saved = await saveTagsAction({ slug, visitId, selectedTags });
         if (!saved.success) {
           setError(saved.error);
           return;
@@ -164,7 +181,7 @@ export function ReviewForm({
         changed ||= savedTags.current !== key;
         savedTags.current = key;
       }
-      const result = await generateReviewsAction({ slug, regenerate });
+      const result = await generateReviewsAction({ slug, visitId, regenerate });
       if (!result.success) {
         setTransient(result.transient);
         setError(result.error);
@@ -181,6 +198,7 @@ export function ReviewForm({
       setReviews(result.reviews);
       if (!unchanged) {
         reviewDrafts.current = {};
+        setAutoRotate(true);
         setReviewIndex(0);
         setReviewText(result.reviews[0]);
         setEditing(false);
@@ -189,6 +207,7 @@ export function ReviewForm({
     }, "Could not create your review. Please try again.");
   }
   function showReview(index: number) {
+    setAutoRotate(false);
     if (
       pending.current ||
       index < 0 ||
@@ -209,6 +228,7 @@ export function ReviewForm({
     else void generate(true);
   }
   async function acceptReview() {
+    setAutoRotate(false);
     if (!reviewText.trim()) {
       setError("Please enter your review.");
       return;
@@ -217,6 +237,7 @@ export function ReviewForm({
       // Validate the original suggestion; the atomic handoff then saves edits.
       const selected = await selectReviewAction({
         slug,
+        visitId,
         reviewText: reviews[reviewIndex],
       });
       if (!selected.success) {
@@ -225,6 +246,7 @@ export function ReviewForm({
       }
       const result = await continueToGoogleAction({
         slug,
+        visitId,
         reviewText: reviewText.trim(),
       });
       if (!result.success) {
@@ -267,7 +289,7 @@ export function ReviewForm({
   }
   async function finishReview() {
     await run(async () => {
-      const result = await confirmReviewPostedAction({ slug });
+      const result = await confirmReviewPostedAction({ slug, visitId });
       if (!result.success) {
         setError(result.error);
         return;
@@ -296,13 +318,16 @@ export function ReviewForm({
       <section
         className={[
           styles.card,
-          screen === "experience" ? styles.experience : "",
+          screen === "experience" ? styles.experience : screen === "review" ? styles.suggestions : "",
         ].join(" ")}
         aria-busy={busy}
+        onPointerDownCapture={(event) => {
+          if (screen === "review" && !(event.target as HTMLElement).closest("[data-rotation-control]")) setAutoRotate(false);
+        }}
       >
         {screen === "experience" ? (
           <header className={`${styles.hero} ${["cafe", "restaurant"].includes(category.toLowerCase()) ? "" : styles.categoryHero}`}>
-            {logoUrl && <Avatar src={logoUrl} size={38} shape="square" />}
+            {logoUrl && !logoFailed && <Avatar src={logoUrl} size={28} shape="square" onError={() => { setLogoFailed(true); return false; }} />}
             <div className={styles.business}>{business}</div>
             <div className={styles.location}>{location}</div>
             <h1 ref={heading} tabIndex={-1}>
@@ -416,6 +441,8 @@ export function ReviewForm({
                 aria-roledescription="carousel"
                 aria-label="Review suggestions"
                 tabIndex={0}
+                onFocus={() => setAutoRotate(false)}
+                onPointerDownCapture={() => setAutoRotate(false)}
                 onKeyDown={(event) => {
                   if (editing || event.target !== event.currentTarget) return;
                   if (event.key === "ArrowRight") {
@@ -465,7 +492,7 @@ export function ReviewForm({
                     value={reviewText}
                     maxLength={500}
                     showCount
-                    autoSize={{ minRows: 5, maxRows: 10 }}
+                    autoSize={{ minRows: 4, maxRows: 6 }}
                     disabled={busy}
                     onChange={(event) => setReviewText(event.target.value)}
                   />
@@ -502,6 +529,12 @@ export function ReviewForm({
                     {editing ? "Done" : "Edit"}
                   </Button>
                 </div>
+              </div>
+              <div className={styles.carouselHint}>
+                <span>Review {reviewIndex + 1} of {reviews.length} · Swipe to choose</span>
+                <button data-rotation-control type="button" onClick={() => { reviewDrafts.current[reviewIndex] = reviewText; setAutoRotate(!autoRotate); }} disabled={busy || editing}>
+                  {autoRotate ? "Pause" : "Auto-play"}
+                </button>
               </div>
               <div
                 className={styles.optionDots}

@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
-import { slugSchema } from "@/lib/validations";
+import { slugSchema, visitIdSchema } from "@/lib/validations";
 import { generatedReviewsSchema } from "@/lib/review-generation";
 import { generateGroqReviews } from "@/lib/groq";
 import { rateLimit, requestAddress } from "@/lib/rate-limit";
@@ -10,12 +10,13 @@ import { getVisitorKey } from "@/services/review-session.service";
 
 const generationSchema = z.object({
   slug: slugSchema,
+  visitId: visitIdSchema,
   regenerate: z.boolean().default(false),
 });
 
 export async function generateReviewSuggestions(input: unknown) {
-  const { slug, regenerate } = generationSchema.parse(input);
-  const visitorKey = await getVisitorKey(false);
+  const { slug, regenerate, visitId } = generationSchema.parse(input);
+  const visitorKey = await getVisitorKey(false, visitId);
   const session = await prisma.reviewSession.findFirst({
     where: { visitorKey, qrCode: { slug, isActive: true } },
     include: {
@@ -51,7 +52,7 @@ export async function generateReviewSuggestions(input: unknown) {
     throw new AppError(
       "Some selected tags are no longer available. Please choose again.",
     );
-  await rateLimit("review-generation-visitor", visitorKey, 10, 3600);
+  await rateLimit("review-generation-visitor", await getVisitorKey(false), 10, 3600);
   await rateLimit("review-generation-ip", await requestAddress(), 60, 3600);
   const reviews = await generateGroqReviews({
     rating: session.rating,
@@ -83,10 +84,10 @@ export async function generateReviewSuggestions(input: unknown) {
 }
 
 export async function selectReviewSuggestion(input: unknown) {
-  const { slug, reviewText } = z
-    .object({ slug: slugSchema, reviewText: z.string().min(10).max(400) })
+  const { slug, reviewText, visitId } = z
+    .object({ slug: slugSchema, visitId: visitIdSchema, reviewText: z.string().min(10).max(400) })
     .parse(input);
-  const visitorKey = await getVisitorKey(false);
+  const visitorKey = await getVisitorKey(false, visitId);
   const result = await prisma.reviewSession.updateMany({
     where: {
       visitorKey,

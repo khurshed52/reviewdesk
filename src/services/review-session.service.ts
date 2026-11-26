@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import {
   confirmReviewPostedSchema,
+  visitIdSchema,
   reviewSchema,
   reviewTagsSchema,
   finalReviewSchema,
@@ -23,7 +24,9 @@ function signed(value: string) {
     .digest("hex");
 }
 
-export async function getVisitorKey(create: boolean) {
+export async function getVisitorKey(create: boolean, visitId?: string) {
+  const visit = visitIdSchema.parse(visitId);
+  const visitorIdentity = (key: string) => signed(visit ? `visitor:${key}:visit:${visit}` : `visitor:${key}`);
   const jar = await cookies();
   const stored = jar.get("reviewdesk-visitor")?.value;
 
@@ -40,7 +43,7 @@ export async function getVisitorKey(create: boolean) {
         Buffer.from(signed(key), "hex"),
       )
     ) {
-      return signed(`visitor:${key}`);
+      return visitorIdentity(key);
     }
   }
 
@@ -60,7 +63,7 @@ export async function getVisitorKey(create: boolean) {
     maxAge: 60 * 60 * 24,
   });
 
-  return signed(`visitor:${key}`);
+  return visitorIdentity(key);
 }
 
 /**
@@ -134,11 +137,11 @@ export async function getExistingReviewState(slug: string) {
 }
 
 export async function saveRating(input: unknown) {
-  const { slug, rating } = reviewSchema.parse(input);
+  const { slug, rating, visitId } = reviewSchema.parse(input);
 
   await rateLimit("review-ip", await requestAddress(), 120, 3600);
 
-  const visitorKey = await getVisitorKey(true);
+  const visitorKey = await getVisitorKey(true, visitId);
 
   return prisma.$transaction(async (tx) => {
     const qr = await tx.qRCode.findUnique({
@@ -204,8 +207,8 @@ export async function saveRating(input: unknown) {
 }
 
 export async function saveSelectedTags(input: unknown) {
-  const { slug, selectedTags } = reviewTagsSchema.parse(input);
-  const visitorKey = await getVisitorKey(false);
+  const { slug, selectedTags, visitId } = reviewTagsSchema.parse(input);
+  const visitorKey = await getVisitorKey(false, visitId);
 
   await rateLimit("review-tags-ip", await requestAddress(), 120, 3600);
 
@@ -295,8 +298,8 @@ export async function saveSelectedTags(input: unknown) {
 
 // Save the final text and click marker atomically; never create a new session.
 export async function saveReviewForGoogle(input: unknown) {
-  const { slug, reviewText } = finalReviewSchema.parse(input);
-  const visitorKey = await getVisitorKey(false);
+  const { slug, reviewText, visitId } = finalReviewSchema.parse(input);
+  const visitorKey = await getVisitorKey(false, visitId);
 
   return prisma.$transaction(async (tx) => {
     const session = await tx.reviewSession.findFirst({
@@ -376,8 +379,8 @@ export async function saveReviewForGoogle(input: unknown) {
 
 // User-reported completion only; this does not verify a post with Google.
 export async function confirmReviewPosted(input: unknown) {
-  const { slug } = confirmReviewPostedSchema.parse(input);
-  const visitorKey = await getVisitorKey(false);
+  const { slug, visitId } = confirmReviewPostedSchema.parse(input);
+  const visitorKey = await getVisitorKey(false, visitId);
 
   const where = {
     visitorKey,

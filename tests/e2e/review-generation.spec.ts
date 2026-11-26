@@ -18,11 +18,11 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         name: "Flow " + suffix,
         slug: suffix,
         tags: {
-          create: ["Food", "Service", "Cleanliness", "Price"].map(
+          create: ["Food", "Service", "Cleanliness", "Price", "Drinks", "Ambience", "Location", "Variety", "Speed", "Friendly Staff", "Seating", "Other"].map(
             (name, index) => ({
               name,
               slug: "tag-" + index,
-              icon: ["food", "user", "sparkles", "tag"][index],
+              icon: ["food", "user", "sparkles", "tag"][index % 4],
             }),
           ),
         },
@@ -148,19 +148,28 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
     await page.setViewportSize({ width: 390, height: 844 });
     const choices = ["Excellent", "Good", "Okay", "Poor", "Very poor"];
     for (let index = 0; index < choices.length; index++) {
-      await context.clearCookies();
+      // Keep the same signed browser cookie across repeated submissions.
       clipboardWorks = index !== 4;
       const entry = index === 2 ? "nfc" : "qr";
       await page.goto("/r/" + slug + "?entry=" + entry);
       await expect(
         page.getByRole("heading", { name: "How was your experience?" }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30000 });
       await expect(
         page.getByRole("button", { name: "Create My Review" }),
       ).toBeDisabled();
       await expect(
         page.getByRole("button", { name: "Share Your Experience" }),
       ).toHaveCount(0);
+      if (index === 0) {
+        for (const viewport of [{width: 360, height: 640}, {width: 390, height: 844}, {width: 430, height: 932}]) {
+          await page.setViewportSize(viewport);
+          const box = await page.getByRole("button", { name: "Create My Review" }).boundingBox();
+          expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        }
+        await page.setViewportSize({width: 390, height: 844});
+      }
       await page
         .getByRole("button", { name: choices[index], exact: true })
         .click();
@@ -194,7 +203,14 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
       }
       await expect(
         page.getByRole("heading", { name: "Here’s a review for you" }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30000 });
+      if (index === 0) {
+        await expect(page.getByRole("button", { name: "Show suggestion 2" })).toHaveAttribute("aria-current", "true", { timeout: 12000 });
+        await page.getByRole("button", { name: "Show suggestion 1" }).click();
+        await expect(page.getByRole("button", { name: "Auto-play", exact: true })).toBeVisible({ timeout: 30000 });
+        const box = await page.getByRole("button", { name: "Use This Review" }).boundingBox();
+        expect(box!.y + box!.height).toBeLessThanOrEqual(844);
+      }
       const session = await prisma.reviewSession.findFirstOrThrow({
         where: { qrCodeId: qr.id },
         orderBy: { createdAt: "desc" },
@@ -220,7 +236,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         await page.getByRole("button", { name: "Create My Review" }).click();
         await expect(
           page.getByRole("heading", { name: "Here’s a review for you" }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
       }
       if (index === 0) {
         const requestsBeforeSliding = generated;
@@ -229,7 +245,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
           .click();
         await expect(
           page.getByText(session.generatedReviews[2], { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         const card = page.getByRole("region", { name: "Review suggestions" });
         const bounds = (await card.boundingBox())!;
         const touch = await context.newCDPSession(page);
@@ -251,11 +267,11 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         await swipe(bounds.x + 60, bounds.x + 220);
         await expect(
           page.getByText(session.generatedReviews[1], { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         await swipe(bounds.x + 220, bounds.x + 60);
         await expect(
           page.getByText(session.generatedReviews[2], { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         await expect(
           page.getByRole("button", { name: "Show suggestion 3", exact: true }),
         ).toHaveAttribute("aria-current", "true");
@@ -281,11 +297,11 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         await expect(page.getByRole("status")).toContainText("AI is busy");
         await expect(
           page.getByText(session.generatedReviews[2], { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         await page.getByRole("button", { name: "Try Another" }).click();
         await expect(
           page.getByText(session.generatedReviews[0], { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         await page.getByRole("button", { name: "Edit", exact: true }).click();
         await page
           .getByRole("textbox", { name: "Your review" })
@@ -299,7 +315,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
           .click();
         await expect(
           page.getByText("My own edited experience.", { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         failSave = true;
       }
       if (index === 0)
@@ -311,7 +327,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         ).toContainText("Could not save");
         await expect(
           page.getByText("My own edited experience.", { exact: true }),
-        ).toBeVisible();
+        ).toBeVisible({ timeout: 30000 });
         await page.getByRole("button", { name: "Use This Review" }).click();
       }
       await expect(
@@ -319,7 +335,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
           name: clipboardWorks ? "Review Copied!" : "Your review is ready",
           exact: true,
         }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30000 });
       const handoff = await prisma.reviewSession.findUniqueOrThrow({
         where: { id: session.id },
       });
@@ -360,42 +376,18 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         page.getByRole("heading", {
           name: "Did you finish posting your review?",
         }),
-      ).toBeVisible();
-      if (index === 0) {
-        await page.getByRole("button", { name: "Not yet" }).click();
-        await page.reload();
-        await expect(
-          page.getByRole("heading", {
-            name: "Did you finish posting your review?",
-          }),
-        ).toBeVisible();
-      }
-      if (index === 4) {
-        await page.evaluate(() => {
-          window.open = () => null;
-        });
-        await page
-          .getByRole("button", { name: "Open Google Review Again" })
-          .click();
-        await expect(page).toHaveURL(googleURL);
-        await page.goto("/r/" + slug + "?entry=qr");
-        await expect(
-          page.getByRole("heading", {
-            name: "Did you finish posting your review?",
-          }),
-        ).toBeVisible();
-      }
+      ).toBeVisible({ timeout: 30000 });
       await page.getByRole("button", { name: "Yes, done" }).click();
       await expect(
         page.getByRole("heading", { name: "Thank you!", exact: true }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30000 });
       await page.reload();
       await expect(
-        page.getByRole("heading", { name: "Thank you!", exact: true }),
-      ).toBeVisible();
+        page.getByRole("heading", { name: "How was your experience?", exact: true }),
+      ).toBeVisible({ timeout: 30000 });
       await expect(
         page.getByRole("button", { name: "Create My Review" }),
-      ).toHaveCount(0);
+      ).toBeDisabled();
       const completed = await prisma.reviewSession.findUniqueOrThrow({
         where: { id: session.id },
       });

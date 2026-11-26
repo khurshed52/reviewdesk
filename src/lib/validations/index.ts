@@ -94,14 +94,17 @@ export const qrStatusSchema = z.object({
   isActive: z.boolean(),
 });
 export const idSchema = z.string().cuid();
+export const visitIdSchema = z.string().uuid().optional();
 export const reviewSchema = z.object({
   slug: z.string().regex(/^[A-Za-z0-9_-]{16}$/),
+  visitId: visitIdSchema,
   rating: z.number().int().min(1).max(5),
 });
 export const slugSchema = reviewSchema.shape.slug;
 
 export const reviewTagsSchema = z.object({
   slug: slugSchema,
+  visitId: visitIdSchema,
   selectedTags: z
     .array(z.string().cuid())
     .max(3)
@@ -110,6 +113,7 @@ export const reviewTagsSchema = z.object({
 
 export const finalReviewSchema = z.object({
   slug: slugSchema,
+  visitId: visitIdSchema,
   reviewText: z
     .string()
     .trim()
@@ -117,4 +121,4 @@ export const finalReviewSchema = z.object({
     .max(500, "Keep your review under 500 characters."),
 });
 
-export const confirmReviewPostedSchema = z.object({ slug: slugSchema });
+export const confirmReviewPostedSchema = z.object({ slug: slugSchema, visitId: visitIdSchema });
