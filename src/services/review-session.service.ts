@@ -418,3 +418,40 @@ export async function confirmReviewPosted(input: unknown) {
     };
   });
 }
+
+// Save rating and optional category tags together, avoiding two browser round trips.
+export async function saveExperience(input: unknown) {
+  const { slug, rating, visitId } = reviewSchema.parse(input);
+  const { selectedTags } = reviewTagsSchema.parse(input);
+  const address = await requestAddress();
+  await Promise.all([
+    rateLimit("review-ip", address, 120, 3600),
+    rateLimit("review-tags-ip", address, 120, 3600),
+  ]);
+  const visitorKey = await getVisitorKey(true, visitId);
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qRCode.findUnique({
+      where: { slug },
+      select: { id: true, isActive: true, location: { select: { business: { select: {
+        category: { select: { tags: { where: { isActive: true, id: { in: selectedTags } }, select: { id: true } } } },
+      } } } } },
+    });
+    if (!qr?.isActive) throw new AppError("This review link is unavailable");
+    if (qr.location.business.category.tags.length !== selectedTags.length)
+      throw new AppError("Some options are no longer available. Please refresh and try again.");
+    const where = { qrCodeId_visitorKey: { qrCodeId: qr.id, visitorKey } };
+    const existing = await tx.reviewSession.findUnique({ where, select: {
+      rating: true, selectedTags: true, clickedGoogle: true, confirmedPostedAt: true, status: true,
+    } });
+    if (existing?.clickedGoogle || existing?.confirmedPostedAt || existing?.status === "GOOGLE_CLICKED")
+      throw new AppError("You have already completed this review experience.");
+    if (existing?.rating === rating && existing.selectedTags.length === selectedTags.length &&
+      selectedTags.every(id => existing.selectedTags.includes(id))) return;
+    const data = { rating, selectedTags, status: selectedTags.length ? "TAGS_SELECTED" as const : "RATED" as const };
+    await tx.reviewSession.upsert({ where,
+      create: { ...data, qrCodeId: qr.id, visitorKey },
+      update: { ...data, generatedReviews: [], reviewText: null },
+      select: { id: true },
+    });
+  });
+}

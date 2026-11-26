@@ -39,35 +39,20 @@ export async function setQRCodeStatus(input: unknown) {
 }
 export async function resolvePublicQR(slug: string) {
   return prisma.qRCode.findUnique({
-    where: {
-      slug,
-    },
-    include: {
-      location: {
-        include: {
-          business: {
-            include: {
-              merchant: {
-                select: {
-                  id: true,
-                },
-              },
-              category: {
-                include: {
-                  tags: {
-                    where: {
-                      isActive: true,
-                    },
-                    orderBy: {
-                      sortOrder: "asc",
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+    where: { slug },
+    select: {
+      id: true, isActive: true,
+      location: { select: {
+        name: true,
+        business: { select: {
+          name: true, logoUrl: true,
+          category: { select: {
+            name: true,
+            tags: { where: { isActive: true }, orderBy: { sortOrder: "asc" },
+              select: { id: true, name: true, icon: true } },
+          } },
+        } },
+      } },
     },
   });
 }

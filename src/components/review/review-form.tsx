@@ -13,13 +13,13 @@ import {
   Send,
   Star,
 } from "lucide-react";
+import { useTouchSwipe } from "./use-touch-swipe";
 import { ReviewTagIcon } from "./tag-icon";
 import { ExperienceSelector } from "./experience-selector";
 import styles from "./review-flow.module.css";
 import {
   confirmReviewPostedAction,
-  saveRatingAction,
-  saveTagsAction,
+  saveExperienceAction,
   generateReviewsAction,
   selectReviewAction,
   continueToGoogleAction,
@@ -73,8 +73,9 @@ export function ReviewForm({
   );
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const savedRating = useRef(0);
-  const savedTags = useRef("");
+  const savedExperience = useRef("");
+  const [generationStage, setGenerationStage] = useState("Creating your review…");
+  const reviewCard = useRef<HTMLDivElement>(null);
   const generatedContext = useRef("");
   const [reviews, setReviews] = useState<string[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
@@ -159,28 +160,15 @@ export function ReviewForm({
   async function generate(regenerate = false) {
     if (!rating) return;
     await run(async () => {
-      let changed = false;
-      if (!regenerate) {
-        if (savedRating.current !== rating) {
-          const result = await saveRatingAction({ slug, visitId, rating });
-          if (!result.success) {
-            setError(result.error);
-            return;
-          }
-          savedRating.current = rating;
-          savedTags.current = "";
-          changed = true;
-        }
-        const key = [...selectedTags].sort().join(",");
-        // Save [] too, so removing every highlight clears previous tags.
-        const saved = await saveTagsAction({ slug, visitId, selectedTags });
-        if (!saved.success) {
-          setError(saved.error);
-          return;
-        }
-        changed ||= savedTags.current !== key;
-        savedTags.current = key;
+      const experienceKey = rating + ":" + [...selectedTags].sort().join(",");
+      const changed = savedExperience.current !== experienceKey;
+      if (!regenerate && changed) {
+        setGenerationStage("Saving your experience…");
+        const saved = await saveExperienceAction({ slug, visitId, rating, selectedTags });
+        if (!saved.success) { setError(saved.error); return; }
+        savedExperience.current = experienceKey;
       }
+      setGenerationStage("Writing your suggestions…");
       const result = await generateReviewsAction({ slug, visitId, regenerate });
       if (!result.success) {
         setTransient(result.transient);
@@ -221,6 +209,9 @@ export function ReviewForm({
     setReviewText(reviewDrafts.current[index] ?? reviews[index]);
     setEditing(false);
   }
+  useTouchSwipe(reviewCard, (direction) => {
+    if (reviews.length) showReview((reviewIndex + direction + reviews.length) % reviews.length);
+  }, () => setAutoRotate(false), busy || editing);
   function tryAnother() {
     if (pending.current) return;
     clearError();
@@ -421,7 +412,7 @@ export function ReviewForm({
                 disabled={!rating || busy}
                 onClick={() => void generate()}
               >
-                {busy ? "Creating your review…" : "Create My Review"}{" "}
+                {busy ? generationStage : "Create My Review"}{" "}
                 {!busy && <ArrowRight size={19} aria-hidden />}
               </Button>
             </>
@@ -437,6 +428,7 @@ export function ReviewForm({
               </p>
               <div
                 className={styles.review}
+                ref={reviewCard}
                 role="region"
                 aria-roledescription="carousel"
                 aria-label="Review suggestions"
@@ -458,6 +450,7 @@ export function ReviewForm({
                   if (
                     busy ||
                     editing ||
+                    event.pointerType === "touch" ||
                     !event.isPrimary ||
                     (event.target as HTMLElement).closest(
                       "button, textarea, input",
@@ -469,7 +462,7 @@ export function ReviewForm({
                     y: event.clientY,
                     id: event.pointerId,
                   };
-                  event.currentTarget.setPointerCapture(event.pointerId);
+                  event.currentTarget.setPointerCapture?.(event.pointerId);
                 }}
                 onPointerCancel={() => {
                   swipeStart.current = null;
@@ -482,7 +475,7 @@ export function ReviewForm({
                   const dx = event.clientX - start.x;
                   const dy = event.clientY - start.y;
                   if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.5)
-                    showReview(reviewIndex + (dx < 0 ? 1 : -1));
+                    showReview((reviewIndex + (dx < 0 ? 1 : -1) + reviews.length) % reviews.length);
                 }}
               >
                 <Quote size={30} fill="currentColor" aria-hidden />
@@ -536,6 +529,8 @@ export function ReviewForm({
                   {autoRotate ? "Pause" : "Auto-play"}
                 </button>
               </div>
+              <div className={styles.reviewNavigation}>
+                <Button type="text" aria-label="Previous review" disabled={busy || editing} onClick={() => showReview((reviewIndex - 1 + reviews.length) % reviews.length)} icon={<ArrowLeft size={19} />} />
               <div
                 className={styles.optionDots}
                 aria-label={
@@ -556,6 +551,8 @@ export function ReviewForm({
                     />
                   </button>
                 ))}
+              </div>
+                <Button type="text" aria-label="Next review" disabled={busy || editing} onClick={() => showReview((reviewIndex + 1) % reviews.length)} icon={<ArrowRight size={19} />} />
               </div>
               <Button
                 type="primary"

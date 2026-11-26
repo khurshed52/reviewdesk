@@ -52,8 +52,10 @@ export async function generateReviewSuggestions(input: unknown) {
     throw new AppError(
       "Some selected tags are no longer available. Please choose again.",
     );
-  await rateLimit("review-generation-visitor", await getVisitorKey(false), 10, 3600);
-  await rateLimit("review-generation-ip", await requestAddress(), 60, 3600);
+  await Promise.all([
+    rateLimit("review-generation-visitor", await getVisitorKey(false), 10, 3600),
+    rateLimit("review-generation-ip", await requestAddress(), 60, 3600),
+  ]);
   const reviews = await generateGroqReviews({
     rating: session.rating,
     tagNames: tags.map((tag) => tag.name),

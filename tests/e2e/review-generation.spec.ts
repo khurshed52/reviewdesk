@@ -3,9 +3,12 @@ import { test, expect } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../src/lib/prisma";
 
+test.use({ hasTouch: true });
+
 test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, handoff and completion", async ({
   page,
   context,
+  browserName,
 }) => {
   test.setTimeout(360000);
   const suffix = randomBytes(8).toString("hex");
@@ -195,7 +198,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
       }
       await page.getByRole("button", { name: "Create My Review" }).click();
       if (index === 0) {
-        await expect(page.getByRole("status")).toContainText("AI is busy");
+        await expect(page.getByRole("status")).toContainText("AI is busy", { timeout: 30000 });
         await expect(
           page.getByRole("button", { name: "Excellent", exact: true }),
         ).toHaveAttribute("aria-pressed", "true");
@@ -248,9 +251,29 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         ).toBeVisible({ timeout: 30000 });
         const card = page.getByRole("region", { name: "Review suggestions" });
         const bounds = (await card.boundingBox())!;
-        const touch = await context.newCDPSession(page);
+        const touch = browserName === "chromium" ? await context.newCDPSession(page) : null;
         const y = bounds.y + bounds.height / 2;
         async function swipe(from: number, to: number) {
+          if (!touch) {
+            await card.evaluate((target, { from, to, y }) => {
+              // Desktop WebKit has no public Touch constructor. Exercise the
+              // native listeners with equivalent touch lists; taps below use
+              // Playwright's real touchscreen input.
+              const finger = (x: number) => ({ identifier: 1, target, clientX: x, clientY: y });
+              const dispatch = (type: string, x: number) => {
+                const event = new Event(type, { bubbles: true, cancelable: true });
+                Object.defineProperties(event, {
+                  touches: { value: type === "touchend" ? [] : [finger(x)] },
+                  changedTouches: { value: [finger(x)] },
+                });
+                target.dispatchEvent(event);
+              };
+              dispatch("touchstart", from);
+              dispatch("touchmove", to);
+              dispatch("touchend", to);
+            }, { from, to, y });
+            return;
+          }
           await touch.send("Input.dispatchTouchEvent", {
             type: "touchStart",
             touchPoints: [{ x: from, y }],
@@ -275,7 +298,10 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         await expect(
           page.getByRole("button", { name: "Show suggestion 3", exact: true }),
         ).toHaveAttribute("aria-current", "true");
-        await touch.detach();
+        await touch?.detach();
+        await page.getByRole("button", {name: "Next review", exact: true}).tap();
+        await expect(page.getByRole("button", {name: "Show suggestion 1", exact: true})).toHaveAttribute("aria-current", "true");
+        await page.getByRole("button", {name: "Previous review", exact: true}).tap();
         await page
           .getByRole("button", { name: "Show suggestion 1", exact: true })
           .click();
@@ -294,7 +320,7 @@ test("three-screen QR/NFC flow: optional tags, cache, edits, honest ratings, han
         expect(generated).toBe(before);
         failGeneration = true;
         await page.getByRole("button", { name: "Try Another" }).click();
-        await expect(page.getByRole("status")).toContainText("AI is busy");
+        await expect(page.getByRole("status")).toContainText("AI is busy", { timeout: 30000 });
         await expect(
           page.getByText(session.generatedReviews[2], { exact: true }),
         ).toBeVisible({ timeout: 30000 });

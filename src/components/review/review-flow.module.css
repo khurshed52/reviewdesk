@@ -33,7 +33,7 @@
   color: white;
   background:
     linear-gradient(#10291d55, #10291d99),
-    url("/images/review-welcome-cafe.png") center 48% / cover,
+    url("/images/review-welcome-cafe.webp") center 48% / cover,
     #14352c;
 }
 .hero h1 {
@@ -421,3 +421,15 @@
     margin-top: calc(12px + var(--experience-space) / 2);
   }
 }
+
+.reviewNavigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.reviewNavigation > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.reviewNavigation .optionDots { margin: 0 0 4px; }

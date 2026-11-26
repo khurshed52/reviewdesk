@@ -35,9 +35,11 @@ await mock.module("groq-sdk", {
       completions: {
         create: async (options: {
           model: string;
+          reasoning_effort: string;
           response_format: { type: string };
           messages: { content: string }[];
         }) => {
+          assert.equal(options.reasoning_effort, "low");
           models.push(options.model);
           assert.equal(options.model, "openai/gpt-oss-20b");
           assert.equal(options.response_format.type, "json_object");

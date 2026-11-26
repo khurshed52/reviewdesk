@@ -1,6 +1,7 @@
 "use server";
 import {
   confirmReviewPosted,
+  saveExperience,
   saveRating,
   saveReviewForGoogle,
   saveSelectedTags,
@@ -67,6 +68,15 @@ export async function confirmReviewPostedAction(input: unknown) {
       success: true as const,
       confirmedPostedAt: result.confirmedPostedAt.toISOString(),
     };
+  } catch (error) {
+    return { success: false as const, error: publicError(error) };
+  }
+}
+
+export async function saveExperienceAction(input: unknown) {
+  try {
+    await saveExperience(input);
+    return { success: true as const };
   } catch (error) {
     return { success: false as const, error: publicError(error) };
   }

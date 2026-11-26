@@ -36,6 +36,7 @@ export async function generateGroqReviews(
             { role: "user", content: JSON.stringify(input) },
           ],
           response_format: { type: "json_object" },
+          reasoning_effort: "low",
           temperature: 0.65,
           max_completion_tokens: 1500,
         });
